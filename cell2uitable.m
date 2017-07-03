@@ -1,6 +1,6 @@
 function h = cell2uitable(data, varargin)
 % CELL2UITABLE Display cell array in uitable with menu option to print to CSV
-% 
+%
 %  USAGE: h = cell2uitable(data, varargin)
 % __________________________________________________________________________
 %  INPUTS
@@ -11,8 +11,8 @@ function h = cell2uitable(data, varargin)
 %     colnames             cell array of column names
 %     rownames             cell array of row names
 %     rowstriping          'on' | 'off'
-%     fontsize             font size for table contents 
-%     fontname             font name for table contents 
+%     fontsize             font size for table contents
+%     fontname             font name for table contents
 %     rearrangeablecols    'on' | 'off'
 %     oversizecolfactor    factor to mulitply auto-computed column width
 %                          (useful for making all cell contents visible)
@@ -20,13 +20,13 @@ function h = cell2uitable(data, varargin)
 %     editable             used to set 'ColumnEditable' property
 %     backgroundcolor      uitable background color
 %     foregroundcolor      uitable foreground color
-%     emptypadsize         if >0, pads with that # empty editable rows/cols 
+%     emptypadsize         if >0, pads with that # empty editable rows/cols
 % __________________________________________________________________________
 %  EXAMPLE USAGE
 %     mydata      = num2cell(randn(20, 3));
-%     mycolnames  = {'Variable 1' 'Variable 2' 'Variable 3'}; 
-%     h = cell2uitable(mydata, 'colnames', mycolnames); 
-% 
+%     mycolnames  = {'Variable 1' 'Variable 2' 'Variable 3'};
+%     h = cell2uitable(mydata, 'colnames', mycolnames);
+%
 
 % ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
 % 	Created:  2015-02-03
@@ -53,10 +53,10 @@ vals = setargs(def, varargin);
 if nargin < 1, mfile_showhelp; fprintf('\t| - VARARGIN DEFAULTS - |\n'); disp(vals); return; end
 if ~iscell(data), if ischar(data), data = cellstr(data); else data = num2cell(data); end; end
 data(cellfun('isempty', data)) = {''};
-if and(iscell(colnames), length(colnames)~=size(data, 2)) 
+if and(iscell(colnames), length(colnames)~=size(data, 2))
     error('Length of colnames (%d) does not equal number of columns in data (%d)', length(colnames), size(data, 2));
 end
-if and(iscell(rownames), length(rownames)~=size(data, 1)) 
+if and(iscell(rownames), length(rownames)~=size(data, 1))
     error('Length of colnames (%d) does not equal number of columns in data (%d)', length(rownames), size(data, 1));
 end
 
@@ -74,7 +74,7 @@ end
 
 % | Menu for Save to CSV
 if addsaveuimenu
-    tfig = parent; 
+    tfig = parent;
     if ~strcmpi(get(parent, 'type'), 'figure')
         badfig = 1;
         while badfig
@@ -103,33 +103,38 @@ th = uitable('Parent', parent, ...
     'FontName', fontname);
 
 % | COLUMN WIDTHS
+
 strdata     = get(th, 'data');
-[nrow,ncol] = size(strdata); 
+[nrow,ncol] = size(strdata);
 colwidth    = cell(1,ncol);
 for i = 1:ncol
-   ln = cellfun('length', strdata(:,i)); 
-   idx = find(ln==max(ln)); 
-   colwidth{i} = strsize(strdata(idx(1), i), 'FontSize', fontsize', 'FontName', fontname)*oversizecolfactor; 
+   try
+        ln = cellfun('length', strdata(:,i));
+        idx = find(ln==max(ln));
+        colwidth{i} = strsize(strdata(idx(1), i), 'FontSize', fontsize', 'FontName', fontname)*oversizecolfactor;
+   catch
+        colwidth{i} = 'auto'; 
+   end
 end
-% | PADDING 
+% | PADDING
 if emptypadsize
    pdata = cell(size(strdata)+emptypadsize);
    pdata(:) = {''};
    pdata(1:nrow, 1:ncol) = strdata;
-   colwidth = [colwidth repmat({'auto'}, 1, emptypadsize)]; 
-   set(th, 'data', pdata);  
+   colwidth = [colwidth repmat({'auto'}, 1, emptypadsize)];
+   set(th, 'data', pdata);
 end
-set(th, 'columnwidth', colwidth); 
+set(th, 'columnwidth', colwidth);
 % | Resize Table to Fit Figure
 set(th, 'units', 'pix');
-set(parent, 'units', 'pix'); 
+set(parent, 'units', 'pix');
 tpos    = get(th, 'extent');
-fpos    = get(parent, 'pos'); 
-figpos  = align_figure(tpos(3), tpos(4), 'middle', 'center'); 
+fpos    = get(parent, 'pos');
+figpos  = align_figure(tpos(3), tpos(4), 'middle', 'center');
 set(parent, 'pos', figpos);
 set(th, 'units', 'norm');
 set(findall(parent, '-property', 'units'), 'units', 'norm');
-set(th, 'pos', [0 0 1 1]); 
+set(th, 'pos', [0 0 1 1]);
 set(parent, 'Visible', 'on');
 
 % | Save Handles
@@ -138,7 +143,7 @@ if nargout
     h.tab   = th;
     if addsaveuimenu, h.menu  = savemenu; end
 end
-drawnow; 
+drawnow;
 end
 % ==========================================================================
 %
@@ -147,13 +152,13 @@ end
 % ==========================================================================
 function cb_savetable(varargin)
     t = findobj(varargin{3}, 'type', 'uitable');
-    data = get(t, 'data'); 
-    colnames = get(t, 'columnname'); 
+    data = get(t, 'data');
+    colnames = get(t, 'columnname');
     if size(colnames,2)~=size(data,2), colnames = colnames'; end
-    outcell = [colnames; data]; 
-    outname = sprintf('%s.csv', regexprep(get(varargin{3}, 'name'), ' ', '_')); 
+    outcell = [colnames; data];
+    outname = sprintf('%s.csv', regexprep(get(varargin{3}, 'name'), ' ', '_'));
     [fname, pname] = uiputfile({'*.csv', 'CSV File'; '*.*', 'All Files (*.*)'}, 'Save Table As', outname);
-    writereport(outcell, fullfile(pname, fname)); 
+    writereport(outcell, fullfile(pname, fname));
 end
 function writereport(incell, outname)
 % WRITEREPORT Write cell array to CSV file
@@ -162,7 +167,7 @@ function writereport(incell, outname)
 % __________________________________________________________________________
 %  INPUTS
 %	incell:     cell array of character arrays
-%	outname:   base name for output csv file 
+%	outname:   base name for output csv file
 %
 
 % ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
@@ -197,9 +202,9 @@ function figpos = align_figure(uiW, uiH, valign, halign)
         case 'middle'
           figpos(2) = (screenH/2)-(uiH/2);
         case {'top', 'upper'}
-          figpos(2) = screenH-uiH; 
+          figpos(2) = screenH-uiH;
         case {'bottom', 'lower'}
-          figpos(2) = 1; 
+          figpos(2) = 1;
         otherwise
           error('VALIGN options are: middle, top, upper, bottom, lower')
     end
@@ -207,40 +212,40 @@ function figpos = align_figure(uiW, uiH, valign, halign)
         case 'center'
           figpos(1) = (screenW/2) - (uiW/2);
         case 'right'
-          figpos(1) = screenW - uiW; 
+          figpos(1) = screenW - uiW;
         case 'left'
-          figpos(1) = 1; 
+          figpos(1) = 1;
         otherwise
           error('HALIGN options are: center, left, right')
     end
 end
 function argstruct = setargs(defaults, optargs)
 % SETARGS Name/value parsing and assignment of varargin with default values
-% 
+%
 % This is a utility for setting the value of optional arguments to a
 % function. The first argument is required and should be a cell array of
 % "name, default value" pairs for all optional arguments. The second
 % argument is optional and should be a cell array of "name, custom value"
 % pairs for at least one of the optional arguments.
-% 
-%  USAGE: argstruct = setargs(defaults, args)  
+%
+%  USAGE: argstruct = setargs(defaults, args)
 % __________________________________________________________________________
 %  OUTPUT
-% 
+%
 % 	argstruct: structure containing the final argument values
 % __________________________________________________________________________
 %  INPUTS
-% 
-% 	defaults:  
+%
+% 	defaults:
 %       cell array of "name, default value" pairs for all optional arguments
-% 
-% 	optargs [optional]     
+%
+% 	optargs [optional]
 %       cell array of "name, custom value" pairs for at least one of the
-%       optional arguments. this will typically be the "varargin" array. 
+%       optional arguments. this will typically be the "varargin" array.
 % __________________________________________________________________________
 %  USAGE EXAMPLE (WITHIN FUNCTION)
-% 
-%     defaults    = {'arg1', 0, 'arg2', 'words', 'arg3', rand}; 
+%
+%     defaults    = {'arg1', 0, 'arg2', 'words', 'arg3', rand};
 %     argstruct   = setargs(defaults, varargin)
 %
 
@@ -248,7 +253,7 @@ function argstruct = setargs(defaults, optargs)
 % ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
 %	Created:  2015-03-11
 %	Email:    spunt@caltech.edu
-% 
+%
 %   This program is free software: you can redistribute it and/or modify
 %   it under the terms of the GNU General Public License as published by
 %   the Free Software Foundation, either version 3 of the License, or (at
@@ -262,10 +267,10 @@ function argstruct = setargs(defaults, optargs)
 % __________________________________________________________________________
 if nargin < 1, mfile_showhelp; return; end
 if nargin < 2, optargs = []; end
-defaults = reshape(defaults, 2, length(defaults)/2)'; 
+defaults = reshape(defaults, 2, length(defaults)/2)';
 if ~isempty(optargs)
     if mod(length(optargs), 2)
-        error('Optional inputs must be entered as Name, Value pairs, e.g., myfunction(''name'', value)'); 
+        error('Optional inputs must be entered as Name, Value pairs, e.g., myfunction(''name'', value)');
     end
     arg = reshape(optargs, 2, length(optargs)/2)';
     for i = 1:size(arg,1)
@@ -276,7 +281,7 @@ if ~isempty(optargs)
            error('Input "%s" does not match a valid input.', arg{i,1});
        else
            defaults{idx,2} = arg{i,2};
-       end  
+       end
     end
 end
 for i = 1:size(defaults,1), assignin('caller', defaults{i,1}, defaults{i,2}); end
@@ -286,10 +291,10 @@ function mfile_showhelp(varargin)
 % MFILE_SHOWHELP
 ST = dbstack('-completenames');
 if isempty(ST), fprintf('\nYou must call this within a function\n\n'); return; end
-eval(sprintf('help %s', ST(2).file));  
+eval(sprintf('help %s', ST(2).file));
 end
 function out = cellnum2str(in, ndec)
-% CELLNUM2STR 
+% CELLNUM2STR
 %
 %  USAGE: out = cellnum2str(in, ndec)
 % __________________________________________________________________________
@@ -305,20 +310,20 @@ function out = cellnum2str(in, ndec)
 if nargin < 2, ndec = 3; end
 if nargin < 1, mfile_showhelp; return; end
 if ~iscell(in), error('Input array must be cell!'); end
-out = cellfun(@num2str, in, repmat({['%2.' num2str(ndec) 'f']}, size(in)), 'Unif', false); 
+out = cellfun(@num2str, in, repmat({['%2.' num2str(ndec) 'f']}, size(in)), 'Unif', false);
 out = regexprep(out, '0\.', '\.');
 end
 function [strw, strh] = strsize(string, varargin)
 % STRSIZE Calculate size of string
 %
-%  USAGE: strsize(string, varargin) 
+%  USAGE: strsize(string, varargin)
 %
 
 % ---------------------- Copyright (C) 2015 Bob Spunt ----------------------
 %	Created:  2015-07-14
 %	Email:     spunt@caltech.edu
 % __________________________________________________________________________
-def = { ... 
+def = { ...
     'FontSize',         get(0, 'DefaultTextFontSize'),      ...
     'FontName',         get(0, 'DefaultTextFontname'),      ...
     'FontWeight',       get(0, 'DefaultTextFontWeight'),    ...
@@ -330,6 +335,7 @@ if nargin==0, mfile_showhelp; fprintf('\t| - VARARGIN DEFAULTS - |\n'); disp(val
 
 % | Get text size in data units
 tmpfig  = figure('visible', 'off');
+% if islogical(string{1}), string = {'0'}; end
 hTest   = text(1,1, string, 'Units','Pixels', 'FontUnits',FontUnits,...
     'FontAngle',FontAngle,'FontName',FontName,'FontSize',FontSize,...
     'FontWeight',FontWeight,'Parent',gca, 'Visible', 'off');
@@ -339,5 +345,5 @@ strh    = textExt(4);
 strw    = textExt(3);
 
 % | If using a proportional font, shrink text width by a fudge factor to account for kerning.
-if ~strcmpi(FontName, 'Fixed-Width'), strw = strw*0.9; end 
+if ~strcmpi(FontName, 'Fixed-Width'), strw = strw*0.9; end
 end
